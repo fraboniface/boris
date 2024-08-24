@@ -4,10 +4,16 @@ from utils import Markdown
 import demarche, info
 
 # css = Style(":root, { --pico-font-size: 100%; --pico-font-family: Pacifico, cursive;}")
-app, rt = fast_app(live=true, pico=True)
+app, rt = fast_app(pico=True)
+
 
 def navlink(title, href):
-    return A(title, href=href, style="color: grey; decoration: none; color-hover: blue; decoration-current: underline;")
+    return A(
+        title,
+        href=href,
+        style="color: grey; decoration: none; color-hover: blue; decoration-current: underline;",
+    )
+
 
 def nav():
     return Nav(
@@ -22,7 +28,7 @@ def nav():
 
 
 def footer():
-    return Footer("Pied de page", style='text-align: center;')
+    return Footer("Pied de page", style="text-align: center;")
 
 
 def Page(title, *content):
@@ -31,20 +37,22 @@ def Page(title, *content):
 
 @app.get("/")
 def home():
-    return Page("BoRiS - L'assistant du Bail Réel Solidaire",
+    return Page(
+        "BoRiS - L'assistant du Bail Réel Solidaire",
         Header(
             Container(
-            Grid(
-                Container(
-                    H1("BoRiS", style="font-size: 5rem"),
-                    H3(
-                        "La plateforme d'information et de simulation du bail réel solidaire",
-                        style="font-family: Space Mono, monospace",
+                Grid(
+                    Container(
+                        H1("BoRiS", style="font-size: 5rem"),
+                        H3(
+                            "La plateforme d'information et de simulation du bail réel solidaire",
+                            style="font-family: Space Mono, monospace",
+                        ),
                     ),
-                ),
-                Img(src="assets/image.svg"),
+                    Img(src="assets/image.svg", style="max-height: 400px"),
+                )
             )
-        )),
+        ),
         Section(
             Container(
                 H2("Le Bail Réel Solidaire ?"),
@@ -72,6 +80,7 @@ Vous devez par ailleurs vous acquitter une faible redevance mensuelle auprès de
                 ),
             ),
             style="background-color: rgb(70, 95, 157); padding: 20px 0;",
+            data_theme="dark",
         ),
     )
 
@@ -83,15 +92,44 @@ def get_demarche():
 
 @app.get("/info-brs")
 def infos():
-    return Page("Tout savoir sur le Bail Réel Solidaire", Main(
-        info.page()
-    ))
+    return Page("Tout savoir sur le Bail Réel Solidaire", info.page())
+
 
 @app.get("/simulateur")
 def simu():
-    return Title("Simulateur d'éligibilité"), nav(), Container(
-        P('A faire')
+    return (
+        Title("Simulateur d'éligibilité"),
+        nav(),
+        Container(
+            H1("Etes-vous éligible au Bail Réel Solidaire ?"),
+            Br(),
+            P("Entrez ces informations pour le savoir :"),
+            Form(Grid(
+                Input(name='nombre', type='number', placeholder="Nombre de personnes dans votre foyer fiscal"),
+                Input(name="revenu", type='number', placeholder="Revenu fiscal de référence du foyer"),
+                Button('Tester mon éligiblité',
+                hx_post='/eligible', hx_include="input[name='nombre'], input[name='revenu']", target_id='target'
+                ))),
+            P(id='target'),
+        ),
     )
 
+
+@app.post('/eligible')
+def is_eligible(nombre: int, revenu: int):
+    try:
+        count = int(nombre)
+        revenu = int(revenu)
+        if count <= 0:
+            return P('Entrez des nombres entiers positifs')
+        
+        ratio = revenu / count
+        seuil = 25000
+        if ratio > seuil:
+            return P("Vous n'êtes pas éligible.", style="color: red;")
+        else:
+            return P("Vous êtes éligible !", style="color: green;")
+    except:
+        return P("Entrez des nombres entiers positifs")
 
 serve()
